@@ -1,8 +1,9 @@
 import os
 import logging
+import zipfile
 
 from config import *
-from token import TOKEN
+from bot_token import TOKEN
 
 from aiogram import Bot, Dispatcher, executor, types
 
@@ -14,6 +15,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
 list_of_find_file = []
+list_of_find_dir = []
 
 
 def find_file(extension):
@@ -27,6 +29,12 @@ def find_file(extension):
             return ex[0]
 
 
+def send(file, path, is_dir=False):
+    match is_dir:
+        case False:
+            pass
+
+
 @dp.message_handler(commands=["get"])
 async def get_file(message: types.Message):
     """
@@ -34,7 +42,10 @@ async def get_file(message: types.Message):
     :param message:
     :return: pass
     """
-    global list_of_find_file
+    global list_of_find_dir, list_of_find_file
+
+    list_of_find_file, list_of_find_dir = [], []
+
     file_input_name = message.text[5:]
     file_name, file_ext = str(message.text[5:]).split(".")
     file_dir = find_file(file_ext)
@@ -63,6 +74,43 @@ async def get_file(message: types.Message):
     await bot.send_message(message.chat.id, "Напишите номер, с нужным путем ")
 
 
+@dp.message_handler(commands=["dir"])
+async def get_dir(message: types.Message):
+    """
+    Get file from user and find them
+    :param message:
+    :return: pass
+    """
+    global list_of_find_dir, list_of_find_file
+
+    list_of_find_file, list_of_find_dir = [], []
+
+    dir_name = message.text[5:]
+    # file_input_name = message.text[5:]
+    # file_name, file_ext = str(message.text[5:]).split(".")
+    # file_dir = find_file(file_ext)
+    # list_of_find_file = []
+    #
+    for root, dirs, files in os.walk("C:/Users"):
+        for dirname in dirs:
+            if dirname.lower() == dir_name.lower():
+                list_of_find_dir.append([dirname, root])
+
+    if not list_of_find_dir:
+        await message.answer("Такой папки нет((")
+        return
+
+    if len(list_of_find_dir) == 1:
+        await bot.send_message(message.chat.id, "DIR")
+        return
+
+    await bot.send_message(message.chat.id, f"Обнаружено {len(list_of_find_dir)} папок, по этим путям: ")
+    for i in list_of_find_dir:
+        await bot.send_message(message.chat.id, f"{list_of_find_dir.index(i) + 1} | {i[1]}")
+
+    await bot.send_message(message.chat.id, "Напишите номер, с нужным путем ")
+
+
 @dp.message_handler(content_types=types.ContentTypes.ANY)
 async def send_file(message: types.Message):
     """
@@ -70,7 +118,7 @@ async def send_file(message: types.Message):
     :param message:
     :return: pass
     """
-    global list_of_find_file
+    global list_of_find_file, list_of_find_dir
 
     try:
         num = int(message.text) - 1
