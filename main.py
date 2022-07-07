@@ -1,24 +1,27 @@
-from config import *
-import logging
 import os
+import logging
+
+from config import *
+from token import TOKEN
 
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
 
+# log
 logging.basicConfig(level=logging.INFO)
 
+# initialization bot
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
 list_of_find_file = []
 
 
-class AnswerNum(StatesGroup):
-    answer = State()
-
-
 def find_file(extension):
+    """
+    Determining the file type
+    :param extension:
+    :return: type of file
+    """
     for ex in extensions.items():
         if extension in ex[1]:
             return ex[0]
@@ -26,6 +29,11 @@ def find_file(extension):
 
 @dp.message_handler(commands=["get"])
 async def get_file(message: types.Message):
+    """
+    Get file from user and find them
+    :param message:
+    :return: pass
+    """
     global list_of_find_file
     file_input_name = message.text[5:]
     file_name, file_ext = str(message.text[5:]).split(".")
@@ -57,6 +65,11 @@ async def get_file(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentTypes.ANY)
 async def send_file(message: types.Message):
+    """
+    Choose file num (if num of file > 1)
+    :param message:
+    :return: pass
+    """
     global list_of_find_file
 
     try:
