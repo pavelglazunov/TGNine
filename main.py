@@ -28,7 +28,17 @@ async def send(file, file_path, is_file=True):
         else:
             await bot.send_document(CHAT_ID, open(f"{file_path}/{file}", "rb"))
     else:
-        pass
+        os.chdir(file_path)
+        z = zipfile.ZipFile(f"{file}_ZIP.zip", "w")
+        for root, dirs, files in os.walk(f"{file}"):
+            for f in files:
+                z.write(os.path.join(root, f))
+
+        z.close()
+
+        await bot.send_document(CHAT_ID, open(f"{file}_ZIP.zip", "rb"))
+
+        os.remove(f"{file}_ZIP.zip")
 
 
 def find(name, is_file=True):
@@ -52,13 +62,13 @@ def check_user_id(user_id):
 
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    await bot.send_message(message.chat.id, "Команды: \n /get -- получить файл \n /dir -- получить архив директории")
+    await bot.send_message(CHAT_ID, "Команды: \n /get -- получить файл \n /dir -- получить архив директории")
 
 
 @dp.message_handler(commands=["get"])
 async def get_file(message: types.Message):
     if not check_user_id(message.from_user.id):
-        await bot.send_message(message.chat.id, "У вас нет прав для использования бота")
+        await bot.send_message(CHAT_ID, "У вас нет прав для использования бота")
         return
 
     global list_of_find
@@ -77,17 +87,17 @@ async def get_file(message: types.Message):
         await send(list_of_find[0][0], list_of_find[0][1])
         return
 
-    await bot.send_message(message.chat.id, f"Обнаружено {len(list_of_find)} файлов, по этим путям: ")
+    await bot.send_message(CHAT_ID, f"Обнаружено {len(list_of_find)} файлов, по этим путям: ")
     for i in list_of_find:
-        await bot.send_message(message.chat.id, f"{list_of_find.index(i) + 1} | {i[1]}")
+        await bot.send_message(CHAT_ID, f"{list_of_find.index(i) + 1} | {i[1]}")
 
-    await bot.send_message(message.chat.id, "Напишите номер, с нужным путем ")
+    await bot.send_message(CHAT_ID, "Напишите номер, с нужным путем ")
 
 
 @dp.message_handler(commands=["dir"])
 async def get_dir(message: types.Message):
     if not check_user_id(message.from_user.id):
-        await bot.send_message(message.chat.id, "У вас нет прав для использования бота")
+        await bot.send_message(CHAT_ID, "У вас нет прав для использования бота")
         return
 
     global list_of_find
@@ -106,29 +116,29 @@ async def get_dir(message: types.Message):
         await send(list_of_find[0][0], list_of_find[0][1], is_file=False)
         return
 
-    await bot.send_message(message.chat.id, f"Обнаружено {len(list_of_find)} папок, по этим путям: ")
+    await bot.send_message(CHAT_ID, f"Обнаружено {len(list_of_find)} папок, по этим путям: ")
     for i in list_of_find:
-        await bot.send_message(message.chat.id, f"{list_of_find.index(i) + 1} | {i[1]}")
+        await bot.send_message(CHAT_ID, f"{list_of_find.index(i) + 1} | {i[1]}")
 
-    await bot.send_message(message.chat.id, "Напишите номер, с нужным путем ")
+    await bot.send_message(CHAT_ID, "Напишите номер, с нужным путем ")
 
 
 @dp.message_handler(content_types=types.ContentTypes.ANY)
-async def send_file(message: types.Message):
+async def choose_file(message: types.Message):
     global list_of_find
 
     try:
         num = int(message.text) - 1
     except ValueError:
-        await bot.send_message(message.chat.id, "Не верный ввод")
+        await bot.send_message(CHAT_ID, "Не верный ввод")
         return
 
     if not list_of_find:
-        await bot.send_message(message.chat.id, "Запрос еще не задан")
+        await bot.send_message(CHAT_ID, "Запрос еще не задан")
         return
 
     if num > len(list_of_find) or num < 0:
-        await bot.send_message(message.chat.id, "Данного индекса не существует")
+        await bot.send_message(CHAT_ID, "Данного индекса не существует")
         return
 
     await send(list_of_find[num][0], list_of_find[num][1])
