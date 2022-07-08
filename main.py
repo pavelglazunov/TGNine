@@ -14,111 +14,108 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-list_of_find_file = []
-list_of_find_dir = []
+list_of_find = []
 
 
-def find_file(extension):
-    """
-    Determining the file type
-    :param extension:
-    :return: type of file
-    """
-    for ex in extensions.items():
-        if extension in ex[1]:
-            return ex[0]
+def file_is_video(file):
+    return file.split(".")[1] in extensions["VIDEO"]
 
 
-def send(file, path, is_dir=False):
-    match is_dir:
-        case False:
-            pass
+async def send(file, file_path, is_file=True):
+    if is_file:
+        if file_is_video(file):
+            await bot.send_video(CHAT_ID, open(f"{file_path}/{file}", "rb"))
+        else:
+            await bot.send_document(CHAT_ID, open(f"{file_path}/{file}", "rb"))
+    else:
+        pass
+
+
+def find(name, is_file=True):
+    list_of_find.clear()
+    if is_file:
+        for root, dirs, files in os.walk("C:/Users"):
+            for filename in files:
+                if filename.lower() == name.lower():
+                    list_of_find.append([filename, root])
+
+    else:
+        for root, dirs, files in os.walk("C:/Users"):
+            for dir_name in dirs:
+                if dir_name.lower() == name.lower():
+                    list_of_find.append([dir_name, root])
+
+
+def check_user_id(user_id):
+    return user_id == 1163900032
+
+
+@dp.message_handler(commands=["start"])
+async def start(message: types.Message):
+    await bot.send_message(message.chat.id, "Команды: \n /get -- получить файл \n /dir -- получить архив директории")
 
 
 @dp.message_handler(commands=["get"])
 async def get_file(message: types.Message):
-    """
-    Get file from user and find them
-    :param message:
-    :return: pass
-    """
-    global list_of_find_dir, list_of_find_file
+    if not check_user_id(message.from_user.id):
+        await bot.send_message(message.chat.id, "У вас нет прав для использования бота")
+        return
 
-    list_of_find_file, list_of_find_dir = [], []
+    global list_of_find
+
+    list_of_find.clear()
 
     file_input_name = message.text[5:]
-    file_name, file_ext = str(message.text[5:]).split(".")
-    file_dir = find_file(file_ext)
-    list_of_find_file = []
 
-    for root, dirs, files in os.walk("C:/Users"):
-        for filename in files:
-            if filename.lower() == file_input_name.lower():
-                list_of_find_file.append([filename, root])
+    find(file_input_name)
 
-    if not list_of_find_file:
+    if not list_of_find:
         await message.answer("Такого файла нет((")
         return
 
-    if len(list_of_find_file) == 1:
-        if file_dir == "VIDEO":
-            await bot.send_video(message.chat.id, open(f"{list_of_find_file[0][1]}/{list_of_find_file[0][0]}", "rb"))
-        else:
-            await bot.send_document(message.chat.id, open(f"{list_of_find_file[0][1]}/{list_of_find_file[0][0]}", "rb"))
+    if len(list_of_find) == 1:
+        await send(list_of_find[0][0], list_of_find[0][1])
         return
 
-    await bot.send_message(message.chat.id, f"Обнаружено {len(list_of_find_file)} файлов, по этим путям: ")
-    for i in list_of_find_file:
-        await bot.send_message(message.chat.id, f"{list_of_find_file.index(i) + 1} | {i[1]}")
+    await bot.send_message(message.chat.id, f"Обнаружено {len(list_of_find)} файлов, по этим путям: ")
+    for i in list_of_find:
+        await bot.send_message(message.chat.id, f"{list_of_find.index(i) + 1} | {i[1]}")
 
     await bot.send_message(message.chat.id, "Напишите номер, с нужным путем ")
 
 
 @dp.message_handler(commands=["dir"])
 async def get_dir(message: types.Message):
-    """
-    Get file from user and find them
-    :param message:
-    :return: pass
-    """
-    global list_of_find_dir, list_of_find_file
+    if not check_user_id(message.from_user.id):
+        await bot.send_message(message.chat.id, "У вас нет прав для использования бота")
+        return
 
-    list_of_find_file, list_of_find_dir = [], []
+    global list_of_find
+
+    list_of_find.clear()
 
     dir_name = message.text[5:]
-    # file_input_name = message.text[5:]
-    # file_name, file_ext = str(message.text[5:]).split(".")
-    # file_dir = find_file(file_ext)
-    # list_of_find_file = []
-    #
-    for root, dirs, files in os.walk("C:/Users"):
-        for dirname in dirs:
-            if dirname.lower() == dir_name.lower():
-                list_of_find_dir.append([dirname, root])
 
-    if not list_of_find_dir:
+    find(dir_name, is_file=False)
+
+    if not list_of_find:
         await message.answer("Такой папки нет((")
         return
 
-    if len(list_of_find_dir) == 1:
-        await bot.send_message(message.chat.id, "DIR")
+    if len(list_of_find) == 1:
+        await send(list_of_find[0][0], list_of_find[0][1], is_file=False)
         return
 
-    await bot.send_message(message.chat.id, f"Обнаружено {len(list_of_find_dir)} папок, по этим путям: ")
-    for i in list_of_find_dir:
-        await bot.send_message(message.chat.id, f"{list_of_find_dir.index(i) + 1} | {i[1]}")
+    await bot.send_message(message.chat.id, f"Обнаружено {len(list_of_find)} папок, по этим путям: ")
+    for i in list_of_find:
+        await bot.send_message(message.chat.id, f"{list_of_find.index(i) + 1} | {i[1]}")
 
     await bot.send_message(message.chat.id, "Напишите номер, с нужным путем ")
 
 
 @dp.message_handler(content_types=types.ContentTypes.ANY)
 async def send_file(message: types.Message):
-    """
-    Choose file num (if num of file > 1)
-    :param message:
-    :return: pass
-    """
-    global list_of_find_file, list_of_find_dir
+    global list_of_find
 
     try:
         num = int(message.text) - 1
@@ -126,16 +123,15 @@ async def send_file(message: types.Message):
         await bot.send_message(message.chat.id, "Не верный ввод")
         return
 
-    if not list_of_find_file:
+    if not list_of_find:
         await bot.send_message(message.chat.id, "Запрос еще не задан")
         return
 
-    if num > len(list_of_find_file) or num < 0:
+    if num > len(list_of_find) or num < 0:
         await bot.send_message(message.chat.id, "Данного индекса не существует")
         return
 
-    await bot.send_document(message.chat.id, open(f"{list_of_find_file[num][1]}/{list_of_find_file[num][0]}", "rb"))
-    list_of_find_file = []
+    await send(list_of_find[num][0], list_of_find[num][1])
 
 
 if __name__ == '__main__':
