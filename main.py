@@ -57,17 +57,13 @@ def find(name, is_file=True):
                 l = "file" if is_file else "dir"
                 list_of_find.append([filename, root, l])
 
-    # if is_file:
-    #     for root, dirs, files in os.walk("C:/Users"):
-    #         for filename in files:
-    #             if filename.lower() == name.lower():
-    #                 list_of_find.append([filename, root, "file"])
-    #
-    # else:
-    #     for root, dirs, files in os.walk("C:/Users"):
-    #         for dir_name in dirs:
-    #             if dir_name.lower() == name.lower():
-    #                 list_of_find.append([dir_name, root, "dir"])
+
+def sort(file_name):
+    ex = file_name.split(".")[1]
+    for i in extensions_to_sort.items():
+        if ex in i[1]:
+            print(i[0])
+            return i[0]
 
 
 @dp.message_handler(commands=["start"])
@@ -130,6 +126,13 @@ async def get_dir(message: types.Message):
     await bot.send_message(CHAT_ID, "Напишите номер, с нужным путем ")
 
 
+@dp.message_handler(content_types=["document"])
+async def post_file(message: types.Message):
+    file_name = str(message.document.file_name)
+    dir_to_save = sort(file_name)
+    await message.document.download(destination_dir=f"{dir_to_save}")
+
+
 @dp.message_handler(content_types=types.ContentTypes.ANY)
 async def choose_file(message: types.Message):
     global list_of_find
@@ -155,4 +158,5 @@ async def choose_file(message: types.Message):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    if __name__ == '__main__':
+        executor.start_polling(dp, skip_updates=True)
