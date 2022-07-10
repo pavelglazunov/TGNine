@@ -1,5 +1,14 @@
+import sqlite3
+
+con = sqlite3.connect("db.db")
+cur = con.cursor()
+
+WHITE_LIST_OF_USER = []
+
+for i in cur.execute("""SELECT user_name FROM USERS """).fetchall():
+    WHITE_LIST_OF_USER.append(i[0])
+
 CHAT_ID = 1163900032
-WHITE_LIST_OF_USER = [1163900032, ]
 
 extensions_to_sort = {
     "C:/Users/HP/Desktop/FILE/VIDEO": ["mp4", "3g2", "3gp", "3gp2", "3gpp", "3gpp2", "asf", "asx", "avi", "bin", "dat",

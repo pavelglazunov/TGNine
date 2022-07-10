@@ -21,8 +21,8 @@ def file_is_video(file):
     return file.split(".")[1] in extensions_to_sort["C:/Users/HP/Desktop/FILE/VIDEO"]
 
 
-def check_user_id(user_id):
-    return user_id in WHITE_LIST_OF_USER
+def check_user_name(user_profile_name):
+    return user_profile_name in WHITE_LIST_OF_USER
 
 
 def find(name, is_file=True):
@@ -75,9 +75,11 @@ async def start(message: types.Message):
 
 @dp.message_handler(commands=["get"])
 async def get_file(message: types.Message):
-    if not check_user_id(message.from_user.id):
+    if not check_user_name(message.from_user.username):
         await bot.send_message(CHAT_ID, "У вас нет прав для использования бота")
         return
+
+    print(f"{message.from_user.username} Ищет файл: {message.text}")
 
     find(message.text[5:])
 
@@ -98,9 +100,11 @@ async def get_file(message: types.Message):
 
 @dp.message_handler(commands=["dir"])
 async def get_dir(message: types.Message):
-    if not check_user_id(message.from_user.id):
+    if not check_user_name(message.from_user.username):
         await bot.send_message(CHAT_ID, "У вас нет прав для использования бота")
         return
+
+    print(f"{message.from_user.username}Ищет файл: {message.text}")
 
     list_of_find.clear()
 
@@ -126,6 +130,12 @@ async def post_file(message: types.Message):
     file_name = str(message.document.file_name)
     dir_to_save = sort(file_name)
     await message.document.download(destination_dir=f"{dir_to_save}")
+
+
+@dp.message_handler(commands=["add"])
+async def add_user(message: types.Message):
+    user_name = message.text[6:]
+    WHITE_LIST_OF_USER.append(user_name)
 
 
 @dp.message_handler(content_types=types.ContentTypes.ANY)
